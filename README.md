@@ -16,6 +16,7 @@ Syncs Kindle Scribe notebooks using an android user agent to access the notebook
 Keeps a local record of the last update time. Runs a check every 5 minutes.
 
 Using `pystray` to have a "Force Sync" and "Last Update" button in the system tray.
+
 ![Kindle Scribe Sync Screenshot](https://github.com/Koloss5421/KindleScribeSync/blob/main/docs/screenshot.png?raw=true)
 
 This is currently only made for running on windows. 
