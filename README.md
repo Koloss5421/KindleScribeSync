@@ -14,6 +14,7 @@
 ## Getting Started
 Syncs Kindle Scribe notebooks using an android user agent to access the notebook files. 
 Keeps a local record of the last update time. Runs a check every 5 minutes.
+Stores the files in a destination folder in PDF format.
 
 Using `pystray` to have a "Force Sync" and "Last Update" button in the system tray.
 
