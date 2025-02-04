@@ -1,4 +1,4 @@
-# kindle Scribe Sync
+# Kindle Scribe Sync
 
 ![Kindle Scribe Sync Icon](https://github.com/Koloss5421/KindleScribeSync/blob/main/KindleScribeSyncIcon.png?raw=true)
 
