@@ -23,6 +23,7 @@
 
 import os, io, sys, json, time, pickle, pystray, logging, tarfile, img2pdf, schedule, requests, selenium.webdriver, selenium.webdriver.common, selenium.webdriver.firefox, selenium.webdriver.firefox.firefox_binary
 from PIL import Image
+from shutil import rmtree
 from datetime import datetime
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -33,6 +34,7 @@ RENDER_HEIGHT = 2500
 RENDER_WIDTH = 1200
 NOTEBOOK_JSON_PATH = "notebooks.json"
 COOKIES_FILE = "cookies.pkl"
+UPDATE_MINUTES = 30
 
 ## Where to extract tar images
 EXTRACT_PATH = "extraction"
@@ -202,8 +204,8 @@ def iterate_notebooks(obj, parentObj):
 
     for x in obj:
         id = x['id']
-        if not id in parentItems:
 
+        if not id in parentItems:
             if 'path' in parentObj:
                 newPath = "{}\\{}".format(parentObj['path'], x['title'])
             else:
@@ -221,7 +223,9 @@ def iterate_notebooks(obj, parentObj):
             folder_path = "{}\\{}".format(SYNC_PATH, parentItems[id]['path'])
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
+                os.removedirs
             iterate_notebooks(x['items'], parentItems[id])
+
         
         if x['type'] == "notebook":
             nb_data = get_notebook(id)
@@ -246,6 +250,46 @@ def iterate_notebooks(obj, parentObj):
                 update_count += 1
                 parentItems[id]['updateTime'] = int(time.time())
 
+def id_exists_in_object(id, sync_items = []):
+    """
+    Checks if an id exists in an array object. Returns the index of the object.
+    """
+    for x in sync_items:
+        if x["id"] == id:
+            return sync_items.index(x)
+    return -1
+
+
+def prune_orphans(items, sync_items):
+    """
+    Recursive function that iterates over a set of items, if the item is not in the sync_items array it removes it based on the item type.
+    If the item exists in both and is of type folder, it recurses on the next set of items.
+    """
+    global update_count
+    for k in list(items.keys()):
+        dict_object = items[k]
+        index = id_exists_in_object(k, sync_items)
+        if  index == -1:
+            if dict_object["type"] == "folder":
+                folder_path = "{}\\{}".format(SYNC_PATH, dict_object['path'])
+                try:
+                    logger.info("Pruning '{}' Folder".format(folder_path))
+                    rmtree(folder_path)
+                    update_count += 1
+                except:
+                    logger.error("Pruning '{}' Folder Failed!".format(folder_path))
+            if dict_object["type"] == "notebook":
+                pdf_path = "{}\\{}.pdf".format(SYNC_PATH, dict_object['path'])
+                try:
+                    logger.info("Pruning '{}' Notebook".format(pdf_path))
+                    os.remove(pdf_path)
+                    update_count += 1
+                except:
+                    logger.error("Pruning '{}' Notebook Failed!".format(pdf_path))
+            del items[k]
+        else:
+            if dict_object["type"] == "folder":   
+                prune_orphans(dict_object["items"], sync_items[index]["items"])
 
 def get_all_notebooks():
     """
@@ -265,6 +309,7 @@ def get_all_notebooks():
     cookies = requests.utils.dict_from_cookiejar(session.cookies)
     data = resp.json()
     iterate_notebooks(data['itemsList'], notebooks)
+    prune_orphans(notebooks, data['itemsList'])
     save_notebook_json()
 
 def load_cookies():
@@ -364,7 +409,7 @@ def check_notebooks():
     now = datetime.now()
     last_update = now.strftime("%m/%d/%Y, %H:%M:%S")
 
-    logger.info("Will Check again in 5 minutes...")
+    logger.info("Will Check again in {} minutes...".format(UPDATE_MINUTES))
 
 
 if not os.path.exists(EXTRACT_PATH):
@@ -389,8 +434,8 @@ tray_icon.run_detached()
 logger.info("Running initial check")
 check_notebooks()
 
-## schedule the check_notebooks function every 5 minutes
-schedule.every(5).minutes.do(check_notebooks)
+## schedule the check_notebooks function
+schedule.every(UPDATE_MINUTES).minutes.do(check_notebooks)
 
 ## Run forever please.
 while running:
