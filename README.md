@@ -25,6 +25,7 @@ You must authenticate through the selenium browser, 2 min timeout when it opens.
 The cookies are then saved for use later by requests.
 
 There may be some bugs. Not sure how much I will maintain it.
+No Longer have a Kindle Scribe to test with.
 
 ## Installation
 
